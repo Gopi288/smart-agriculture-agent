@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%">
+  <defs>
+    <!-- Sky & Sun Gradient -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a7c59" />
+      <stop offset="35%" stop-color="#73a942" />
+      <stop offset="70%" stop-color="#aad576" />
+      <stop offset="100%" stop-color="#d8f3dc" />
+    </linearGradient>
+
+    <!-- Sun Glow Gradient -->
+    <radialGradient id="sunGlow" cx="20%" cy="15%" r="65%">
+      <stop offset="0%" stop-color="#fff9a6" stop-opacity="0.9" />
+      <stop offset="20%" stop-color="#fef08a" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#e9d8a6" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Hill Gradient 1 (Distant) -->
+    <linearGradient id="hillDistant" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d6a4f" />
+      <stop offset="100%" stop-color="#1b4332" />
+    </linearGradient>
+
+    <!-- Hill Gradient 2 (Mid-ground) -->
+    <linearGradient id="hillMid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#40916c" />
+      <stop offset="100%" stop-color="#2d6a4f" />
+    </linearGradient>
+
+    <!-- Hill Gradient 3 (Foreground Crop Rows) -->
+    <linearGradient id="hillFore" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#52b788" />
+      <stop offset="100%" stop-color="#1b4332" />
+    </linearGradient>
+
+    <!-- Crop Field Row Texture Pattern -->
+    <pattern id="cropRows" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(25)">
+      <line x1="0" y1="0" x2="0" y2="40" stroke="#2d6a4f" stroke-width="2" stroke-opacity="0.3" />
+      <circle cx="20" cy="20" r="2.5" fill="#74c69d" fill-opacity="0.4" />
+    </pattern>
+  </defs>
+
+  <!-- Sky Canvas -->
+  <rect width="1920" height="1080" fill="url(#skyGrad)" />
+
+  <!-- Sun Rays & Glow -->
+  <circle cx="380" cy="180" r="500" fill="url(#sunGlow)" />
+  <polygon points="380,180 -100,0 200,1080" fill="#fff" opacity="0.08" />
+  <polygon points="380,180 300,1080 800,1080" fill="#fff" opacity="0.05" />
+  <polygon points="380,180 900,1080 1500,1080" fill="#fff" opacity="0.04" />
+
+  <!-- Distant Mountain / Forest Silhouette -->
+  <path d="M 0,620 Q 350,510 750,560 T 1500,530 Q 1750,510 1920,550 L 1920,1080 L 0,1080 Z" fill="url(#hillDistant)" opacity="0.85" />
+
+  <!-- Midground Rolling Crop Terraces -->
+  <path d="M 0,680 Q 420,590 920,660 T 1920,620 L 1920,1080 L 0,1080 Z" fill="url(#hillMid)" />
+  <!-- Crop Row overlay -->
+  <path d="M 0,680 Q 420,590 920,660 T 1920,620 L 1920,1080 L 0,1080 Z" fill="url(#cropRows)" />
+
+  <!-- Foreground Agricultural Field Terraces -->
+  <path d="M 0,780 Q 380,710 880,770 T 1920,730 L 1920,1080 L 0,1080 Z" fill="url(#hillFore)" />
+
+  <!-- Foliage / Plant Silhouette Accents in Foreground -->
+  <g fill="#081c15" opacity="0.6">
+    <!-- Left Plant Cluster -->
+    <path d="M 40,1080 C 45,950 110,880 180,880 C 120,930 110,990 100,1080 Z" />
+    <path d="M 120,1080 C 130,970 200,920 280,930 C 200,970 180,1020 160,1080 Z" />
+    <path d="M 0,1080 C 10,980 60,930 110,940 C 60,990 40,1040 20,1080 Z" />
+
+    <!-- Right Plant Cluster -->
+    <path d="M 1850,1080 C 1840,940 1780,890 1720,900 C 1780,940 1800,1000 1810,1080 Z" />
+    <path d="M 1910,1080 C 1900,960 1840,910 1780,920 C 1830,960 1850,1010 1870,1080 Z" />
+  </g>
+
+  <!-- Ambient Light Vignette -->
+  <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+    <stop offset="40%" stop-color="#000000" stop-opacity="0" />
+    <stop offset="100%" stop-color="#000000" stop-opacity="0.35" />
+  </radialGradient>
+  <rect width="1920" height="1080" fill="url(#vignette)" />
+</svg>

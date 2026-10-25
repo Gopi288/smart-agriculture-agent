@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Supported Crops Explorer (24 Varieties){% endblock %}
+{% block page_title %}Supported Crops Explorer{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-title">
+    <span>🌾 Comprehensive Agricultural Crop Registry</span>
+    <span class="badge badge-info">{{ crops | length }} Registered Crops</span>
+  </div>
+  <p class="card-subtitle">
+    Authoritative catalog detailing botanical taxonomy, neural transfer-learning readiness,
+    FAO-56 phenological crop coefficients (Kc), and University Extension Integrated Pest Management (IPM) guidelines.
+  </p>
+
+  <!-- Filter and Search Bar -->
+  <div class="crop-filters">
+    <button type="button" class="filter-btn crop-filter-btn active" data-category="all">All Varieties ({{ crops | length }})</button>
+    {% for cat in categories %}
+      <button type="button" class="filter-btn crop-filter-btn" data-category="{{ cat }}">{{ cat }}</button>
+    {% endfor %}
+    <div style="margin-left: auto;">
+      <input type="text" id="cropSearchInput" class="crop-search-input" placeholder="🔍 Search by name...">
+    </div>
+  </div>
+</div>
+
+<!-- 24 Crops Grid -->
+<div class="crop-grid">
+  {% for crop_name, data in crops.items() %}
+    <div class="crop-card" data-name="{{ crop_name }}" data-category="{{ data.category }}" onclick="openCropModal('modal-{{ data.id }}')">
+      <div class="crop-card-header">
+        <div>
+          <div class="crop-card-title">{{ crop_name }}</div>
+          <div class="crop-card-scientific">{{ data.scientific_name }}</div>
+        </div>
+        <div class="crop-card-icon">{{ data.icon }}</div>
+      </div>
+
+      <div>
+        <span class="badge badge-secondary">{{ data.category }}</span>
+        {% if data.ai_model_supported %}
+          <span class="badge badge-success" title="Trained on PlantVillage foliar disease benchmark">🔬 AI Vision Ready</span>
+        {% else %}
+          <span class="badge badge-info" title="FAO-56 Irrigation and Extension Knowledge Base ready">💧 FAO-56 &amp; IPM Ready</span>
+        {% endif %}
+      </div>
+
+      <div class="crop-card-meta">
+        <div class="crop-meta-row">
+          <span>Depletion Stress Threshold:</span>
+          <strong>&lt; {{ data.base_depletion_threshold }}%</strong>
+        </div>
+        <div class="crop-meta-row">
+          <span>Optimal Moisture Range:</span>
+          <strong>{{ data.optimal_moisture_range[0] }}% - {{ data.optimal_moisture_range[1] }}%</strong>
+        </div>
+        <div class="crop-meta-row">
+          <span>Rooting Depth:</span>
+          <strong>{{ data.rooting_depth_cm }}</strong>
+        </div>
+      </div>
+
+      <div class="crop-card-actions">
+        <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">View Agronomic Profile &rarr;</span>
+      </div>
+    </div>
+
+    <!-- Modal for Detailed Crop Information -->
+    <div id="modal-{{ data.id }}" class="crop-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9999; align-items:center; justify-content:center; padding:1.5rem; backdrop-filter:blur(4px);">
+      <div class="card" style="max-width:700px; width:100%; max-height:90vh; overflow-y:auto; position:relative; margin-bottom:0;" onclick="event.stopPropagation()">
+        <button type="button" onclick="closeCropModal('modal-{{ data.id }}')" style="position:absolute; top:1.25rem; right:1.25rem; background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+        
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+          <span style="font-size:3rem;">{{ data.icon }}</span>
+          <div>
+            <h2 style="font-size:1.5rem; margin-bottom:0.2rem;">{{ crop_name }}</h2>
+            <div style="font-style:italic; color:var(--text-muted);">{{ data.scientific_name }} &bull; {{ data.category }}</div>
+          </div>
+        </div>
+
+        <p style="margin-bottom:1.25rem; line-height:1.6;">{{ data.description }}</p>
+
+        <!-- Agronomic Characteristics -->
+        <h3 style="font-size:1rem; margin-bottom:0.6rem; color:var(--primary);">💧 FAO-56 Irrigation Parameters</h3>
+        <div class="table-responsive" style="margin-bottom:1.25rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Seedling</th>
+                <th>Vegetative</th>
+                <th>Flowering (Peak)</th>
+                <th>Fruiting</th>
+                <th>Maturity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Kc: {{ data.fao_kc.seedling }}</td>
+                <td>Kc: {{ data.fao_kc.vegetative }}</td>
+                <td><strong>Kc: {{ data.fao_kc.flowering }}</strong></td>
+                <td>Kc: {{ data.fao_kc.fruiting }}</td>
+                <td>Kc: {{ data.fao_kc.mature }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Integrated Pest Management -->
+        <h3 style="font-size:1rem; margin-bottom:0.6rem; color:var(--primary);">🛡️ Common Pathogens &amp; Extension IPM Practices</h3>
+        {% if data.common_diseases %}
+          {% for dis in data.common_diseases %}
+            <div style="background:var(--surface-alt); border:1px solid var(--surface-border); border-radius:var(--radius); padding:0.85rem 1rem; margin-bottom:0.75rem;">
+              <strong style="color:var(--text-main); font-size:0.95rem;">{{ dis.name }}</strong>
+              <div style="font-size:0.85rem; margin-top:0.3rem; color:var(--text-muted);"><strong>Symptoms:</strong> {{ dis.symptoms }}</div>
+              <div style="font-size:0.85rem; margin-top:0.3rem; color:var(--primary-dark);"><strong>IPM Cultural Control:</strong> {{ dis.ipm_practices }}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p style="color:var(--text-muted); font-size:0.85rem;">Standard cultural crop sanitation and rotation advised.</p>
+        {% endif %}
+
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--surface-border);">
+          <a href="{{ url_for('irrigation.irrigation_view') }}?crop={{ crop_name }}" class="btn btn-outline btn-sm">
+            💧 Check Irrigation Needs
+          </a>
+          {% if data.ai_model_supported %}
+            <a href="{{ url_for('disease.disease_view') }}?crop={{ crop_name }}" class="btn btn-primary btn-sm">
+              🔬 Scan Leaf with AI
+            </a>
+          {% endif %}
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeCropModal('modal-{{ data.id }}')">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openCropModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+function closeCropModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.crop-modal-overlay').forEach(m => m.style.display = 'none');
+  }
+});
+</script>
+{% endblock %}

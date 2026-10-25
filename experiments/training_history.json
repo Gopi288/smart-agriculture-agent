@@ -1,0 +1,52 @@
+{
+  "model_architecture": "MobileNetV2",
+  "epochs": 6,
+  "batch_size": 16,
+  "learning_rate": 0.001,
+  "elapsed_training_seconds": 37.45,
+  "best_val_acc": 0.9259,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 2.0189,
+      "train_acc": 0.2308,
+      "val_loss": 1.8553,
+      "val_acc": 0.5926
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.6516,
+      "train_acc": 0.7094,
+      "val_loss": 1.4457,
+      "val_acc": 0.8148
+    },
+    {
+      "epoch": 3,
+      "train_loss": 1.3802,
+      "train_acc": 0.7094,
+      "val_loss": 1.094,
+      "val_acc": 0.7407
+    },
+    {
+      "epoch": 4,
+      "train_loss": 1.0738,
+      "train_acc": 0.7949,
+      "val_loss": 0.8302,
+      "val_acc": 0.9259
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.8436,
+      "train_acc": 0.812,
+      "val_loss": 0.7006,
+      "val_acc": 0.8519
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.7059,
+      "train_acc": 0.8803,
+      "val_loss": 0.5471,
+      "val_acc": 0.8889
+    }
+  ]
+}

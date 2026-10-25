@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Audit History{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-size: 1.85rem; color: var(--primary-dark); margin-bottom: 0.35rem;">Audit &amp; Historical Records</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Persistent SQLite records of previous disease analyses, model confidence scores, and irrigation evaluations.
+    </p>
+  </div>
+
+  <!-- Filter Form -->
+  <form method="GET" action="{{ url_for('history.history_view') }}" style="display: flex; gap: 0.5rem; align-items: center;">
+    <select name="crop" class="form-control" style="width: auto; padding: 0.45rem 0.75rem;">
+      <option value="">All Crops</option>
+      {% for c in supported_crops %}
+        <option value="{{ c }}" {% if selected_crop == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if selected_crop %}
+      <a href="{{ url_for('history.history_view') }}" class="btn btn-secondary btn-sm">Reset</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Disease Analyses Records -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-title">🍃 Crop Disease Analysis Records</div>
+  {% if disease_records %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Timestamp</th>
+            <th>Crop</th>
+            <th>Predicted Condition</th>
+            <th>Model Confidence</th>
+            <th>Status</th>
+            <th>Crop Match</th>
+            <th>Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in disease_records %}
+            <tr>
+              <td>#{{ r.id }}</td>
+              <td>{{ r.timestamp[:16].replace('T', ' ') }}</td>
+              <td><strong>{{ r.crop_declared }}</strong></td>
+              <td>{{ r.disease_name }}</td>
+              <td>
+                <span class="badge {% if r.confidence_score >= 0.70 %}badge-success{% else %}badge-warning{% endif %}">
+                  {{ (r.confidence_score * 100) | round(1) }}%
+                </span>
+              </td>
+              <td>
+                {% if r.is_conclusive %}
+                  <span class="badge badge-success">Conclusive</span>
+                {% else %}
+                  <span class="badge badge-warning">Review</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if r.crop_matched %}
+                  <span style="color: var(--success);">Matched</span>
+                {% else %}
+                  <span style="color: var(--danger); font-weight: bold;">Mismatch</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('disease.download_report', record_id=r.id) }}" class="btn btn-outline btn-sm">
+                  📥 Download
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); font-size: 0.9rem; padding: 1.5rem 0; text-align: center;">
+      No disease analyses found matching the current filter.
+    </p>
+  {% endif %}
+</div>
+
+<!-- Irrigation Assessments Records -->
+<div class="card">
+  <div class="card-title">💧 Irrigation Advisory Records</div>
+  {% if irrigation_records %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Timestamp</th>
+            <th>Crop</th>
+            <th>Stage / Soil</th>
+            <th>Moisture</th>
+            <th>Recent Rain</th>
+            <th>Advisory Output</th>
+            <th>Urgency</th>
+            <th>Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ir in irrigation_records %}
+            <tr>
+              <td>#{{ ir.id }}</td>
+              <td>{{ ir.timestamp[:16].replace('T', ' ') }}</td>
+              <td><strong>{{ ir.crop }}</strong></td>
+              <td>{{ ir.growth_stage or 'N/A' }} / {{ ir.soil_type or 'N/A' }}</td>
+              <td>{{ ir.soil_moisture if ir.soil_moisture is not none else 'N/A' }}{% if ir.soil_moisture is not none %}%{% endif %}</td>
+              <td>{{ ir.recent_rainfall if ir.recent_rainfall is not none else 'N/A' }}{% if ir.recent_rainfall is not none %} mm{% endif %}</td>
+              <td>{{ ir.recommendation }}</td>
+              <td>
+                <span class="badge {% if ir.action_urgency in ['High', 'Critical'] %}badge-danger{% elif ir.action_urgency in ['Adequate Moisture', 'Defer Irrigation'] %}badge-success{% else %}badge-warning{% endif %}">
+                  {{ ir.action_urgency }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('irrigation.download_report', record_id=ir.id) }}" class="btn btn-outline btn-sm">
+                  📥 Download
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); font-size: 0.9rem; padding: 1.5rem 0; text-align: center;">
+      No irrigation assessment records logged yet.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

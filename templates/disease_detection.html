@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Disease Detection{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.85rem; color: var(--primary-dark); margin-bottom: 0.35rem;">AI Crop Disease Detection</h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem;">
+    Upload a leaf photograph to classify foliar conditions using deep transfer learning (MobileNetV2) and receive integrated pest management (IPM) decision support.
+  </p>
+</div>
+
+<div class="grid-2">
+  <!-- Upload & Input Form -->
+  <div class="card">
+    <div class="card-title">1. Upload Leaf Photograph</div>
+
+    <!-- Demonstration Sample Selector -->
+    {% if sample_images %}
+      <div style="margin-bottom: 1.25rem; background: #f1f8e9; padding: 0.85rem; border-radius: var(--radius); border: 1px solid #dcedc8;">
+        <span style="font-weight: 600; font-size: 0.85rem; color: var(--primary-dark);">Quick Test with Verified Demonstration Samples:</span>
+        <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem;">
+          {% for sname in sample_images %}
+            <button type="button" class="scenario-btn" onclick="selectSampleImage('{{ sname }}')">
+              {{ sname.replace('sample_', '').replace('.jpg', '').replace('.JPG', '') }}
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <form action="{{ url_for('disease.analyze_disease') }}" method="POST" enctype="multipart/form-data" id="diseaseForm" onsubmit="showLoadingState()">
+      <input type="hidden" name="sample_image_name" id="sampleImageInput" value="">
+
+      <!-- Crop Selector -->
+      <div class="form-group">
+        <label for="cropSelect" class="form-label">Target Crop <span style="color: var(--danger);">*</span></label>
+        <select name="crop" id="cropSelect" class="form-control" required>
+          <option value="" disabled {% if not selected_crop %}selected{% endif %}>-- Select Target Crop --</option>
+          <optgroup label="🔬 AI Neural Vision Trained (PlantVillage)">
+            {% for c in supported_crops %}
+              <option value="{{ c }}" {% if selected_crop and selected_crop.lower() == c.lower() %}selected{% endif %}>{{ c }} (AI Model Ready)</option>
+            {% endfor %}
+          </optgroup>
+          {% if all_crops %}
+            <optgroup label="🌾 Agronomic &amp; Extension IPM Supported">
+              {% for c in all_crops %}
+                {% if c not in supported_crops %}
+                  <option value="{{ c }}" {% if selected_crop and selected_crop.lower() == c.lower() %}selected{% endif %}>{{ c }} (IPM Knowledge Base)</option>
+                {% endif %}
+              {% endfor %}
+            </optgroup>
+          {% endif %}
+        </select>
+        <div class="form-hint">AI foliar vision models are actively trained for Tomato, Potato, and Corn. Declared crop is cross-checked against inferred features.</div>
+      </div>
+
+      <!-- File Upload / Dropzone -->
+      <div class="form-group">
+        <label class="form-label">Leaf Photograph (JPG, PNG) <span style="color: var(--danger);">*</span></label>
+        <div class="image-preview-box" id="previewContainer">
+          <div class="preview-placeholder" id="placeholderText">
+            <span style="font-size: 2.5rem;">📷</span>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem;">Drag &amp; drop an image or click Browse below</p>
+          </div>
+          <img id="previewImage" src="" alt="Selected Leaf Preview" style="display: none;">
+        </div>
+
+        <input type="file" name="leaf_image" id="fileInput" class="form-control" accept=".jpg,.jpeg,.png">
+        <div class="form-hint">Ensure the leaf is well-lit, centered, and in focus. Maximum size: 8 MB.</div>
+      </div>
+
+      <!-- Progress bar state -->
+      <div id="loadingIndicator" style="display: none; margin-bottom: 1rem;">
+        <div style="font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-bottom: 0.25rem;">
+          Running MobileNetV2 Neural Inference &amp; Rule Engine...
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar" style="width: 100%; animation: pulse 1.5s infinite;"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submitBtn" style="width: 100%; justify-content: center;">
+        Analyze Leaf Photograph &rarr;
+      </button>
+    </form>
+  </div>
+
+  <!-- Results Dashboard -->
+  <div>
+    {% if result %}
+      {% set inf = result.inference %}
+      {% set rec = result.recommendation %}
+
+      <div class="card" style="border-top: 4px solid {% if rec.is_conclusive and rec.crop_matched %}var(--primary){% else %}var(--warning){% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+          <div>
+            <div class="card-title" style="margin-bottom: 0.2rem;">
+              {{ rec.common_name }}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">
+              Pathogen: {{ rec.pathogen }}
+            </div>
+          </div>
+          <span class="badge {% if rec.is_conclusive and rec.crop_matched %}badge-success{% else %}badge-warning{% endif %}">
+            {% if rec.is_conclusive and rec.crop_matched %}Conclusive Result{% else %}Inconclusive / Review{% endif %}
+          </span>
+        </div>
+
+        <!-- Model Confidence Indicator -->
+        <div style="margin: 1rem 0;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600;">
+            <span>Model Confidence:</span>
+            <span>{{ inf.confidence_pct }}% (Inference Time: {{ inf.latency_ms }} ms)</span>
+          </div>
+          <div class="progress-container">
+            <div class="progress-bar {% if inf.confidence_score < 0.70 %}progress-bar-warning{% endif %}" style="width: {{ inf.confidence_pct }}%;"></div>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">
+            * Labeled as statistical model confidence, not a confirmed laboratory diagnosis.
+          </div>
+        </div>
+
+        <!-- Warning Banners -->
+        {% if rec.warnings %}
+          <div class="alert alert-warning" style="margin: 0.75rem 0;">
+            <div>
+              <strong>Advisory Notices:</strong>
+              <ul style="margin-left: 1.25rem; margin-top: 0.25rem;">
+                {% for w in rec.warnings %}
+                  <li>{{ w }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Description -->
+        <div style="margin: 1rem 0; font-size: 0.9rem;">
+          <p>{{ rec.description }}</p>
+        </div>
+
+        <!-- Observable Symptoms -->
+        {% if rec.observable_symptoms %}
+          <div style="margin: 1rem 0;">
+            <strong style="font-size: 0.9rem; color: var(--primary-dark);">Diagnostic Field Symptoms:</strong>
+            <ul style="margin-left: 1.25rem; font-size: 0.85rem; margin-top: 0.25rem; color: #37474f;">
+              {% for s in rec.observable_symptoms %}
+                <li style="margin-bottom: 0.2rem;">{{ s }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Preventive Practices -->
+        {% if rec.preventive_practices %}
+          <div style="margin: 1rem 0;">
+            <strong style="font-size: 0.9rem; color: var(--primary-dark);">Cultural &amp; Preventive Management (IPM):</strong>
+            <ul style="margin-left: 1.25rem; font-size: 0.85rem; margin-top: 0.25rem; color: #37474f;">
+              {% for p in rec.preventive_practices %}
+                <li style="margin-bottom: 0.2rem;">{{ p }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Sanitation Guidance -->
+        {% if rec.sanitation_guidance %}
+          <div style="margin: 1rem 0;">
+            <strong style="font-size: 0.9rem; color: var(--primary-dark);">Field Sanitation Measures:</strong>
+            <ul style="margin-left: 1.25rem; font-size: 0.85rem; margin-top: 0.25rem; color: #37474f;">
+              {% for s in rec.sanitation_guidance %}
+                <li style="margin-bottom: 0.2rem;">{{ s }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Next Action -->
+        <div style="background: #f1f8e9; padding: 0.75rem 1rem; border-radius: var(--radius); border-left: 4px solid var(--primary); margin: 1rem 0;">
+          <strong style="font-size: 0.85rem; color: var(--primary-dark);">Recommended Next Action:</strong>
+          <p style="font-size: 0.85rem; margin-top: 0.2rem;">{{ rec.recommended_next_step }}</p>
+        </div>
+
+        <!-- Supported Alternatives -->
+        {% if inf.alternatives %}
+          <div style="margin: 1rem 0;">
+            <strong style="font-size: 0.85rem; color: var(--text-muted);">Supported Alternative Hypotheses:</strong>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.35rem;">
+              {% for alt in inf.alternatives %}
+                <span class="badge badge-info" style="font-size: 0.75rem; text-transform: none;">
+                  {{ alt.class_name }}: {{ alt.confidence_pct }}%
+                </span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Source Citation & Limitations -->
+        <div style="font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--surface-border); padding-top: 0.75rem; margin-top: 1rem;">
+          <div><strong>Knowledge Source:</strong> {{ rec.source_name }}</div>
+          {% if rec.source_url %}
+            <div><a href="{{ rec.source_url }}" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline;">Verify University/Agency Reference &rarr;</a></div>
+          {% endif %}
+          <div style="margin-top: 0.35rem;"><strong>Important Limitations:</strong> {{ rec.important_limitations }}</div>
+        </div>
+
+        <!-- Download Report Action -->
+        <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem;">
+          <a href="{{ url_for('disease.download_report', record_id=result.record_id) }}" class="btn btn-outline btn-sm">
+            📥 Download Field Report (.txt)
+          </a>
+          <a href="{{ url_for('history.history_view') }}" class="btn btn-secondary btn-sm">
+            View in Audit History
+          </a>
+        </div>
+      </div>
+
+    {% else %}
+      <div class="card" style="text-align: center; padding: 3rem 1.5rem; color: var(--text-muted);">
+        <span style="font-size: 3rem;">🔬</span>
+        <h3 style="margin-top: 0.5rem; color: #37474f;">Analysis Awaiting Submission</h3>
+        <p style="font-size: 0.9rem; max-width: 380px; margin: 0.5rem auto 0 auto;">
+          Select your target crop and upload a leaf image on the left. The neural network will classify the specimen and display explainable agronomic guidance here.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function selectSampleImage(filename) {
+    document.getElementById('sampleImageInput').value = filename;
+    const previewImg = document.getElementById('previewImage');
+    const placeholder = document.getElementById('placeholderText');
+    previewImg.src = "/static/sample_images/" + filename;
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+
+    // Auto-select crop based on filename if possible
+    const cropSelect = document.getElementById('cropSelect');
+    if (filename.toLowerCase().includes('tomato')) {
+      cropSelect.value = 'Tomato';
+    } else if (filename.toLowerCase().includes('potato')) {
+      cropSelect.value = 'Potato';
+    } else if (filename.toLowerCase().includes('corn')) {
+      cropSelect.value = 'Corn';
+    }
+  }
+
+  const fileInput = document.getElementById('fileInput');
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      if (this.files && this.files[0]) {
+        document.getElementById('sampleImageInput').value = '';
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const previewImg = document.getElementById('previewImage');
+          previewImg.src = evt.target.result;
+          previewImg.style.display = 'block';
+          document.getElementById('placeholderText').style.display = 'none';
+        };
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+  }
+
+  function showLoadingState() {
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').innerText = 'Analyzing Leaf...';
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{
+  "scenarios": [
+    {
+      "id": "scenario_1_healthy_tomato",
+      "title": "Scenario 1: Supported Healthy Tomato Leaf",
+      "crop": "Tomato",
+      "growth_stage": "Vegetative",
+      "soil_type": "Loamy",
+      "soil_moisture": 48.5,
+      "recent_rainfall": 0.0,
+      "rainfall_period_hours": 24,
+      "expected_disease_outcome": "Tomato___healthy",
+      "expected_irrigation_outcome": "Irrigation may not be needed yet.",
+      "description": "Baseline monitoring with adequate soil moisture and healthy foliage."
+    },
+    {
+      "id": "scenario_2_early_blight_deficit",
+      "title": "Scenario 2: Supported Diseased Leaf with Moisture Deficit",
+      "crop": "Tomato",
+      "growth_stage": "Flowering",
+      "soil_type": "Sandy",
+      "soil_moisture": 22.0,
+      "recent_rainfall": 0.0,
+      "rainfall_period_hours": 24,
+      "expected_disease_outcome": "Tomato___Early_blight",
+      "expected_irrigation_outcome": "Irrigation may be needed.",
+      "description": "High-confidence pathogen detection combined with depleted sandy soil moisture."
+    },
+    {
+      "id": "scenario_3_low_confidence_ambiguous",
+      "title": "Scenario 3: Low-Confidence Ambiguous Leaf",
+      "crop": "Potato",
+      "growth_stage": "Fruiting",
+      "soil_type": "Clayey",
+      "soil_moisture": 32.0,
+      "recent_rainfall": 0.0,
+      "rainfall_period_hours": 24,
+      "expected_disease_outcome": "Inconclusive / Out-of-Distribution Warning",
+      "expected_irrigation_outcome": "Reassess after monitoring soil conditions.",
+      "description": "Demonstrates confidence gating avoiding hallucinated diagnosis."
+    },
+    {
+      "id": "scenario_4_missing_soil_moisture",
+      "title": "Scenario 4: Missing Sensor Moisture Data",
+      "crop": "Corn",
+      "growth_stage": "Vegetative",
+      "soil_type": "Loamy",
+      "soil_moisture": null,
+      "recent_rainfall": null,
+      "rainfall_period_hours": 24,
+      "expected_disease_outcome": "Corn_(maize)___healthy",
+      "expected_irrigation_outcome": "Insufficient data to recommend irrigation.",
+      "description": "Demonstrates missing data transparency without fabricating zero values."
+    },
+    {
+      "id": "scenario_5_recent_heavy_rainfall",
+      "title": "Scenario 5: Recent Heavy Precipitation Override",
+      "crop": "Potato",
+      "growth_stage": "Fruiting",
+      "soil_type": "Loamy",
+      "soil_moisture": 45.0,
+      "recent_rainfall": 28.5,
+      "rainfall_period_hours": 24,
+      "expected_disease_outcome": "Potato___healthy",
+      "expected_irrigation_outcome": "Irrigation may not be needed yet.",
+      "description": "Precipitation override preventing over-irrigation and root rot."
+    },
+    {
+      "id": "scenario_6_crop_mismatch_warning",
+      "title": "Scenario 6: Farmer Selection vs Predicted Feature Mismatch",
+      "crop": "Corn",
+      "growth_stage": "Seedling",
+      "soil_type": "Sandy",
+      "soil_moisture": 30.0,
+      "recent_rainfall": 0.0,
+      "rainfall_period_hours": 24,
+      "expected_disease_outcome": "Crop Mismatch Warning",
+      "expected_irrigation_outcome": "Irrigation may be needed.",
+      "description": "Farmer selects Corn but uploads a Solanaceous leaf; system warns and defers treatment."
+    }
+  ]
+}

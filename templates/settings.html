@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings &amp; Configuration{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-title">
+    <span>⚙️ Agent Configuration &amp; System Telemetry</span>
+  </div>
+  <p class="card-subtitle">
+    Review active agronomic decision parameters, appearance themes, database persistence statistics, and session credentials.
+  </p>
+</div>
+
+<div class="grid-2">
+  <!-- Theme Preference -->
+  <div class="card">
+    <div class="card-title">
+      <span>🎨 Interface Appearance</span>
+    </div>
+    <p class="card-subtitle">Select between three hand-crafted visual themes designed for field and laboratory environments.</p>
+
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+      <button type="button" class="btn btn-outline theme-btn" data-theme-val="light" style="flex: 1;">
+        ☀️ Light Mode
+      </button>
+      <button type="button" class="btn btn-outline theme-btn" data-theme-val="dark" style="flex: 1;">
+        🌙 Dark Mode
+      </button>
+      <button type="button" class="btn btn-outline theme-btn" data-theme-val="glass" style="flex: 1;">
+        🫧 Glassmorphism
+      </button>
+    </div>
+    <div class="form-hint" style="margin-top: 0.75rem;">
+      Your theme selection is persisted automatically to <code>localStorage</code> and applies across all pages instantly.
+    </div>
+  </div>
+
+  <!-- Active Decision Thresholds -->
+  <div class="card">
+    <div class="card-title">
+      <span>🎯 Gating &amp; Decision Parameters</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.92rem;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+        <span>Primary Confidence Threshold:</span>
+        <strong>70.0% (0.70)</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+        <span>Secondary Ambiguity Gap:</span>
+        <strong>15.0% (0.15)</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+        <span>Rainfall Suppression Window:</span>
+        <strong>15.0 mm / 24h &bull; 25.0 mm / 48h</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span>Weather Integration:</span>
+        <span class="badge badge-success">Graceful Offline Active</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database & Model Storage Statistics -->
+  <div class="card">
+    <div class="card-title">
+      <span>💾 Persistence &amp; Storage Telemetry</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.92rem;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+        <span>SQLite Database Size:</span>
+        <strong>{{ db_size_kb }} KB</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+        <span>Neural Model Size (MobileNetV2):</span>
+        <strong>{{ model_size_mb }} MB</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+        <span>Stored Disease Analyses:</span>
+        <strong>{{ counts.disease_analyses_count }} records</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span>Stored Irrigation Records:</span>
+        <strong>{{ counts.irrigation_assessments_count }} records</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Session Info -->
+  <div class="card">
+    <div class="card-title">
+      <span>👤 Active Account &amp; Session</span>
+    </div>
+    {% if current_user %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.92rem;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+          <span>Username:</span>
+          <strong>{{ current_user.username }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+          <span>Account Name:</span>
+          <strong>{{ current_user.full_name or current_user.username }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-border); padding-bottom: 0.5rem;">
+          <span>Assigned Role:</span>
+          <span class="badge badge-info">{{ current_user.role or 'Farmer' }}</span>
+        </div>
+        <div style="margin-top: 0.5rem;">
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm" style="color: var(--danger);">
+            🚪 Terminate Session (Logout)
+          </a>
+        </div>
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted);">Unauthenticated session.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ code }}{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align: center; padding: 4rem 1.5rem; max-width: 600px; margin: 3rem auto;">
+  <span style="font-size: 3.5rem;">⚠️</span>
+  <h1 style="font-size: 2rem; color: var(--danger); margin-top: 0.5rem;">Error {{ code }}</h1>
+  <p style="font-size: 1rem; color: #37474f; margin: 1rem 0;">
+    {{ message }}
+  </p>
+  <div style="margin-top: 1.5rem;">
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">Return to Dashboard</a>
+  </div>
+</div>
+{% endblock %}

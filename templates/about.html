@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}About &amp; Architecture{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <h1 style="font-size: 1.85rem; color: var(--primary-dark); margin-bottom: 0.35rem;">System Architecture &amp; Project Blueprint</h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem;">
+    Technical specification, AI methodology, agronomic decision frameworks, and capstone team distribution.
+  </p>
+</div>
+
+<!-- Four-Member Team Distribution Matrix -->
+<div class="card" style="border-top: 4px solid var(--accent);">
+  <div class="card-title">👥 Four-Member Academic Team Distribution</div>
+  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+    Designed for undergraduate B.Tech Computer Science &amp; Engineering defense, dividing responsibilities into technical competencies while maintaining holistic system understanding:
+  </p>
+
+  <div class="grid-4">
+    <div style="background: #fafafa; border: 1px solid var(--surface-border); border-radius: var(--radius); padding: 1rem;">
+      <strong style="color: var(--primary);">Member 1: AI &amp; Vision</strong>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Machine Learning Specialist</div>
+      <ul style="font-size: 0.8rem; margin-left: 1.1rem; margin-top: 0.5rem; line-height: 1.5;">
+        <li>PlantVillage dataset curation &amp; verification</li>
+        <li>Image preprocessing &amp; augmentation</li>
+        <li>MobileNetV2 transfer learning fine-tuning</li>
+        <li>Model evaluation (Precision, Recall, F1)</li>
+      </ul>
+    </div>
+
+    <div style="background: #fafafa; border: 1px solid var(--surface-border); border-radius: var(--radius); padding: 1rem;">
+      <strong style="color: var(--primary);">Member 2: Decision Engines</strong>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Agronomic Logic Architect</div>
+      <ul style="font-size: 0.8rem; margin-left: 1.1rem; margin-top: 0.5rem; line-height: 1.5;">
+        <li>Traceable disease knowledge base design</li>
+        <li>Confidence gating &amp; crop mismatch rules</li>
+        <li>MAD soil moisture irrigation engine</li>
+        <li>OpenWeather agrometeorology service</li>
+      </ul>
+    </div>
+
+    <div style="background: #fafafa; border: 1px solid var(--surface-border); border-radius: var(--radius); padding: 1rem;">
+      <strong style="color: var(--primary);">Member 3: Full-Stack Dev</strong>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Software Systems Engineer</div>
+      <ul style="font-size: 0.8rem; margin-left: 1.1rem; margin-top: 0.5rem; line-height: 1.5;">
+        <li>Flask 3.1 modular blueprint architecture</li>
+        <li>Responsive HTML5/CSS3 frontend</li>
+        <li>SQLite persistence schema &amp; queries</li>
+        <li>Downloadable field report generation</li>
+      </ul>
+    </div>
+
+    <div style="background: #fafafa; border: 1px solid var(--surface-border); border-radius: var(--radius); padding: 1rem;">
+      <strong style="color: var(--primary);">Member 4: QA &amp; Mentorship</strong>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Testing &amp; Technical Mentor</div>
+      <ul style="font-size: 0.8rem; margin-left: 1.1rem; margin-top: 0.5rem; line-height: 1.5;">
+        <li>Automated pytest test suite execution</li>
+        <li>Latency &amp; benchmark experiment tracking</li>
+        <li>Failure mode &amp; security boundary audits</li>
+        <li>A5 Technical Poster &amp; Capstone Report</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- AI Model Methodology -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">🧠 Deep Learning Vision Model</div>
+    <p style="font-size: 0.9rem; color: #37474f;">
+      The image classifier utilizes <strong>MobileNetV2</strong>, an efficient convolutional neural network architecture developed by Google Research (Sandler et al., 2018).
+    </p>
+    <div style="margin: 0.75rem 0; font-size: 0.85rem; color: #37474f;">
+      <strong>Key Architectural Elements:</strong>
+      <ul style="margin-left: 1.25rem; margin-top: 0.35rem; line-height: 1.6;">
+        <li><strong>Inverted Residuals:</strong> Low-dimensional inputs expand to higher dimensions, apply depthwise convolutions, and project back to low dimensions.</li>
+        <li><strong>Linear Bottlenecks:</strong> Prevents non-linearities (like ReLU) from destroying manifold information in low-dimensional feature representations.</li>
+        <li><strong>Transfer Learning:</strong> Leverages ImageNet pre-trained representations fine-tuned specifically on agricultural foliar features.</li>
+        <li><strong>CPU Efficiency:</strong> Only ~3.4M parameters; produces inference predictions in &lt;50ms on standard student laptops.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💧 Agronomic Irrigation Model</div>
+    <p style="font-size: 0.9rem; color: #37474f;">
+      The irrigation decision engine adapts scientific principles from <strong>FAO Irrigation and Drainage Paper 56</strong> and the <strong>USDA Natural Resources Conservation Service (NRCS)</strong>:
+    </p>
+    <div style="margin: 0.75rem 0; font-size: 0.85rem; color: #37474f;">
+      <strong>Decision Factors:</strong>
+      <ul style="margin-left: 1.25rem; margin-top: 0.35rem; line-height: 1.6;">
+        <li><strong>Management Allowed Depletion (MAD):</strong> Crop-specific thresholds (Tomato: 35%, Potato: 40%, Corn: 30%).</li>
+        <li><strong>Phenological Stage:</strong> Reproductive stages (Flowering/Tuber bulking) receive strict sensitivity adjustments.</li>
+        <li><strong>Soil Texture Capacity:</strong> Sandy soils drain quickly (+6% trigger); clayey soils retain water (-5% trigger).</li>
+        <li><strong>Precipitation Override:</strong> Rainfall &ge; 12 mm defers irrigation to prevent root hypoxia.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Technical Limitations & Responsible AI -->
+<div class="card">
+  <div class="card-title">⚠️ Responsible AI, Limitations &amp; Ethical Guardrails</div>
+  <div class="grid-2" style="font-size: 0.85rem; color: #37474f;">
+    <div>
+      <strong style="color: var(--danger);">Technical &amp; Data Limitations:</strong>
+      <ul style="margin-left: 1.25rem; margin-top: 0.35rem; line-height: 1.6;">
+        <li><strong>Domain Shift:</strong> Model trained on curated laboratory leaves may exhibit lower confidence on field photos with soil backgrounds, shadows, or co-occurring pest bites.</li>
+        <li><strong>Subterranean Pathogens:</strong> Visual classification identifies foliar symptoms only; root rots or vascular wilts cannot be confirmed from leaf imagery.</li>
+        <li><strong>Scope Boundary:</strong> Supports 8 verified classes across 3 crops. Unsupported crops are rejected or flagged as out-of-distribution.</li>
+      </ul>
+    </div>
+
+    <div>
+      <strong style="color: var(--primary);">Responsible AI Measures:</strong>
+      <ul style="margin-left: 1.25rem; margin-top: 0.35rem; line-height: 1.6;">
+        <li><strong>Confidence Gating:</strong> Predictions below 70% confidence withhold treatment advice and advise physical extension inspection.</li>
+        <li><strong>No Chemical Prescriptions:</strong> Does not prescribe chemical dosages or unregulated pesticides; provides cultural IPM measures only.</li>
+        <li><strong>No Silent Zeroes:</strong> Missing soil sensor readings are explicitly reported as "Data Required", never fabricated as zero.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Authoritative Citations -->
+<div class="card">
+  <div class="card-title">📚 Agricultural &amp; Academic References</div>
+  <ul style="font-size: 0.85rem; margin-left: 1.25rem; line-height: 1.7; color: #37474f;">
+    <li>Hughes, D., &amp; Salathé, M. (2015). <em>An open access repository of images on plant health to enable the development of mobile disease diagnostics</em>. arXiv preprint arXiv:1511.08060. PlantVillage Dataset (CC BY-SA 4.0).</li>
+    <li>Sandler, M., Howard, A., Zhu, M., Zhmoginov, A., &amp; Chen, L. C. (2018). <em>MobileNetV2: Inverted Residuals and Linear Bottlenecks</em>. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).</li>
+    <li>Allen, R. G., Pereira, L. S., Raes, D., &amp; Smith, M. (1998). <em>Crop evapotranspiration - Guidelines for computing crop water requirements</em>. FAO Irrigation and drainage paper 56. Rome: FAO.</li>
+    <li>University of California Statewide Integrated Pest Management Program (UC IPM). <em>Tomato Pest Management Guidelines</em>. Agriculture and Natural Resources, University of California.</li>
+    <li>Cornell University Cooperative Extension. <em>Vegetable MD Online: Late Blight of Tomato and Potato</em>. Cornell University Department of Plant Pathology.</li>
+    <li>Purdue University Extension. <em>Field Crop Disease Series: Common and Southern Rust (BP-82-W)</em>. Purdue Extension.</li>
+  </ul>
+</div>
+{% endblock %}

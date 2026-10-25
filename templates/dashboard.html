@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <h1 style="font-size: 1.85rem; color: var(--primary-dark); margin-bottom: 0.35rem;">Agricultural Decision Support Center</h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem;">
+    Real-time crop disease diagnosis using deep transfer learning and intelligent irrigation recommendations grounded in agronomic water-balance rules.
+  </p>
+</div>
+
+<!-- System Status Grid -->
+<div class="grid-4" style="margin-bottom: 1.75rem;">
+  <div class="stat-box">
+    <div class="stat-value">
+      {% if status.model_loaded %}
+        <span style="color: var(--success);">Online</span>
+      {% else %}
+        <span style="color: var(--warning);">Standby</span>
+      {% endif %}
+    </div>
+    <div class="stat-label">AI Classifier (MobileNetV2)</div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-value">
+      {% if status.weather_service_active %}
+        <span style="color: var(--info);">Live API</span>
+      {% else %}
+        <span style="color: var(--text-muted);">Offline Mode</span>
+      {% endif %}
+    </div>
+    <div class="stat-label">Weather Service</div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-value">{{ status.confidence_threshold_pct | int }}%</div>
+    <div class="stat-label">Decision Threshold (&tau;)</div>
+  </div>
+
+  <div class="stat-box">
+    <div class="stat-value">{{ status.total_disease_records + status.total_irrigation_records }}</div>
+    <div class="stat-label">Audited Records</div>
+  </div>
+</div>
+
+<!-- Quick Action Cards -->
+<div class="grid-4" style="margin-bottom: 1.75rem;">
+  <div class="card" style="border-top: 4px solid var(--primary); margin-bottom: 0;">
+    <div class="card-title" style="font-size: 1.05rem;">🍃 Disease Detection</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+      MobileNetV2 neural vision inference with confidence gating and extension IPM advice.
+    </p>
+    <a href="{{ url_for('disease.disease_view') }}" class="btn btn-primary btn-sm">Scan Leaf &rarr;</a>
+  </div>
+
+  <div class="card" style="border-top: 4px solid var(--info); margin-bottom: 0;">
+    <div class="card-title" style="font-size: 1.05rem;">💧 Irrigation Advisor</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+      FAO-56 water balance depletion rules across 24 crops with weather override.
+    </p>
+    <a href="{{ url_for('irrigation.irrigation_view') }}" class="btn btn-outline btn-sm">Check Moisture &rarr;</a>
+  </div>
+
+  <div class="card" style="border-top: 4px solid var(--success); margin-bottom: 0;">
+    <div class="card-title" style="font-size: 1.05rem;">🤖 Agri Assistant</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+      Interactive decision Q&amp;A answering questions on pathogens, thresholds, and Kc values.
+    </p>
+    <a href="{{ url_for('main.assistant_view') }}" class="btn btn-secondary btn-sm">Open Assistant &rarr;</a>
+  </div>
+
+  <div class="card" style="border-top: 4px solid var(--accent-gold); margin-bottom: 0;">
+    <div class="card-title" style="font-size: 1.05rem;">🌾 24 Supported Crops</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+      Browse botanical data, optimal soil moisture ranges, and disease resistance profiles.
+    </p>
+    <a href="{{ url_for('main.crops_view') }}" class="btn btn-secondary btn-sm">Explore Registry &rarr;</a>
+  </div>
+</div>
+
+<!-- Supported Crops & Recent Analyses Section -->
+<div class="grid-2">
+  <!-- Supported Scope -->
+  <div class="card">
+    <div class="card-title">Supported Agricultural Classes</div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+      Trained and verified on authentic PlantVillage leaf datasets (CC BY-SA 4.0):
+    </p>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Crop</th>
+            <th>Disease / Condition</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Tomato</td><td>Early Blight (Alternaria solani)</td><td><span class="badge badge-warning">Pathogen</span></td></tr>
+          <tr><td>Tomato</td><td>Late Blight (Phytophthora infestans)</td><td><span class="badge badge-danger">Pathogen</span></td></tr>
+          <tr><td>Tomato</td><td>Healthy Foliage</td><td><span class="badge badge-success">Healthy</span></td></tr>
+          <tr><td>Potato</td><td>Early Blight (Alternaria solani)</td><td><span class="badge badge-warning">Pathogen</span></td></tr>
+          <tr><td>Potato</td><td>Late Blight (Phytophthora infestans)</td><td><span class="badge badge-danger">Pathogen</span></td></tr>
+          <tr><td>Potato</td><td>Healthy Foliage</td><td><span class="badge badge-success">Healthy</span></td></tr>
+          <tr><td>Corn (Maize)</td><td>Common Rust (Puccinia sorghi)</td><td><span class="badge badge-warning">Pathogen</span></td></tr>
+          <tr><td>Corn (Maize)</td><td>Healthy Leaf</td><td><span class="badge badge-success">Healthy</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Analyses Audit -->
+  <div class="card">
+    <div class="card-title">Recent Disease Analyses</div>
+    {% if recent_analyses %}
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Crop</th>
+              <th>Prediction</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rec in recent_analyses %}
+              <tr>
+                <td>{{ rec.timestamp[:16].replace('T', ' ') }}</td>
+                <td><strong>{{ rec.crop_declared }}</strong></td>
+                <td>{{ rec.disease_name }}</td>
+                <td>
+                  <span class="badge {% if rec.confidence_score >= 0.70 %}badge-success{% else %}badge-warning{% endif %}">
+                    {{ (rec.confidence_score * 100) | round(1) }}%
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 1rem; text-align: right;">
+        <a href="{{ url_for('history.history_view') }}" class="btn btn-secondary btn-sm">View Full Audit History &rarr;</a>
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); font-size: 0.9rem; padding: 1.5rem 0; text-align: center;">
+        No analysis records logged yet. Begin by diagnosing a sample leaf image!
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

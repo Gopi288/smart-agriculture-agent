@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In - Smart Agriculture Agent</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* Fullscreen Agricultural Auth Layout */
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(20, 50, 20, 0.72), rgba(10, 30, 15, 0.88)),
+                  url("{{ url_for('static', filename='images/agricultural_bg.svg') }}") center/cover no-repeat;
+      background-attachment: fixed;
+      padding: 1.5rem;
+      position: relative;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+      padding: 2.25rem 2rem;
+      animation: fadeInScale 0.4s ease-out;
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-logo {
+      font-size: 2.5rem;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .auth-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #1b4332;
+      letter-spacing: -0.3px;
+    }
+
+    .auth-tagline {
+      font-size: 0.85rem;
+      color: #52796f;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #607d8b;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-toggle:hover {
+      color: #1b4332;
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .auth-footer a {
+      color: #1b5e20;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .auth-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .demo-credentials-banner {
+      background: rgba(232, 245, 233, 0.9);
+      border: 1px solid #c8e6c9;
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+      font-size: 0.8rem;
+      color: #2e7d32;
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .demo-credentials-banner:hover {
+      background: #c8e6c9;
+    }
+  </style>
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">🌱</div>
+      <h1 class="auth-title">Smart Agriculture Agent</h1>
+      <p class="auth-tagline">Intelligent Crop Care. Smarter Farming.</p>
+    </div>
+
+    <!-- Flash Notifications -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 1rem;">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="font-size: 0.85rem; padding: 0.65rem 0.9rem; margin-bottom: 0.5rem;">
+              <span>{{ message }}</span>
+              <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; cursor:pointer; font-weight:bold;">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- One-click Demo Credentials Helper -->
+    <div class="demo-credentials-banner" onclick="fillDemoCredentials()" title="Click to auto-fill demonstration credentials">
+      <strong>Demo Credentials (Click to Fill):</strong><br>
+      User: <code>farmer_demo</code> &bull; Password: <code>FarmerPassword123!</code>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.login_post') }}" id="loginForm" onsubmit="handleLoginSubmit()">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="form-group">
+        <label for="identifierInput" class="form-label">Username or Email Address</label>
+        <input type="text" name="identifier" id="identifierInput" class="form-control"
+               placeholder="e.g., farmer_demo or name@domain.com"
+               value="{{ identifier if identifier else '' }}" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="passwordInput" class="form-label">Password</label>
+        <div class="password-wrapper">
+          <input type="password" name="password" id="passwordInput" class="form-control"
+                 placeholder="Enter your account password" required style="padding-right: 42px;">
+          <button type="button" class="password-toggle" id="togglePasswordBtn" onclick="togglePasswordVisibility()" title="Show/Hide Password">
+            👁️
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; font-size: 0.85rem;">
+        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: #444;">
+          <input type="checkbox" name="remember" id="rememberInput"> Remember this device
+        </label>
+        <a href="{{ url_for('auth.register_view') }}" style="color: #1b5e20; text-decoration: none; font-weight: 500;">
+          Create account
+        </a>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="loginSubmitBtn" style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 1rem;">
+        Sign In to Farm Dashboard &rarr;
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <span>Protected agricultural decision support system &bull; B.Tech AI Capstone</span>
+    </div>
+  </div>
+
+  <script>
+    function togglePasswordVisibility() {
+      const pwd = document.getElementById('passwordInput');
+      const btn = document.getElementById('togglePasswordBtn');
+      if (pwd.type === 'password') {
+        pwd.type = 'text';
+        btn.innerText = '🙈';
+      } else {
+        pwd.type = 'password';
+        btn.innerText = '👁️';
+      }
+    }
+
+    function fillDemoCredentials() {
+      document.getElementById('identifierInput').value = 'farmer_demo';
+      document.getElementById('passwordInput').value = 'FarmerPassword123!';
+    }
+
+    function handleLoginSubmit() {
+      const btn = document.getElementById('loginSubmitBtn');
+      btn.disabled = true;
+      btn.innerText = 'Authenticating...';
+    }
+  </script>
+</body>
+</html>

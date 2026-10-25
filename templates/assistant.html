@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Agricultural Decision Support Assistant{% endblock %}
+{% block page_title %}Agricultural Decision Assistant{% endblock %}
+
+{% block content %}
+<div class="assistant-layout">
+  <!-- Left Column: Suggested Prompt Chips -->
+  <div>
+    <div class="card" style="position: sticky; top: 90px;">
+      <div class="card-title">
+        <span>💡 Suggested Inquiries</span>
+      </div>
+      <p class="card-subtitle">Click any agronomic question to run instant retrieval against the FAO-56 and Extension IPM knowledge base.</p>
+
+      <div class="prompt-chips-container">
+        {% for prompt in default_prompts %}
+          <a href="{{ url_for('main.assistant_view') }}?q={{ prompt | urlencode }}" class="prompt-chip">
+            {{ prompt }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Query Form and Response Display -->
+  <div>
+    <!-- Query Box -->
+    <div class="card">
+      <div class="card-title">
+        <span>🤖 Ask the Agricultural Agent</span>
+        <span class="badge badge-success">Decision Support Active</span>
+      </div>
+      <p class="card-subtitle">Inquire about foliar disease diagnostics, water depletion thresholds, pest thresholds, or crop specific care.</p>
+
+      <form method="POST" action="{{ url_for('main.assistant_view') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <div style="display: flex; gap: 0.75rem;">
+            <input type="text" name="query" class="form-control" placeholder="Ask e.g. 'How do I prevent Potato Late Blight?' or 'Optimal moisture for Wheat'" value="{{ query }}" required>
+            <button type="submit" class="btn btn-primary" style="flex-shrink: 0;">
+              Ask Assistant &rarr;
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Response Display -->
+    {% if response %}
+      <div class="card" style="border-left: 4px solid var(--primary);">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem;">
+          <div>
+            <span class="badge badge-info">{{ response.category }}</span>
+            <h2 style="font-size: 1.35rem; font-weight: 700; margin-top: 0.4rem; color: var(--text-main);">
+              {{ response.title }}
+            </h2>
+          </div>
+        </div>
+
+        <div style="font-size: 0.98rem; line-height: 1.7; margin-bottom: 1.5rem; white-space: pre-line; color: var(--text-main);">
+          {{ response.body }}
+        </div>
+
+        {% if response.actionable_tips %}
+          <div style="background: var(--surface-alt); border: 1px solid var(--surface-border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--primary);">
+              🌱 Actionable Agronomic Best Practices
+            </h4>
+            <ul style="padding-left: 1.25rem; font-size: 0.92rem; display: flex; flex-direction: column; gap: 0.4rem;">
+              {% for tip in response.actionable_tips %}
+                <li>{{ tip }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        {% if response.referenced_crops %}
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Referenced Varieties:</span>
+            {% for c in response.referenced_crops %}
+              <span class="badge badge-secondary">{{ c }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🌿</div>
+        <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Ready to Assist Your Farm Operations</h3>
+        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">
+          Submit a custom agronomic question above, or select one of the suggested prompts on the left to review verified principles of plant health and irrigation scheduling.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

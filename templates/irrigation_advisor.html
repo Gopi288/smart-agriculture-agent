@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Irrigation Advisor{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.85rem; color: var(--primary-dark); margin-bottom: 0.35rem;">Intelligent Irrigation Advisor</h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem;">
+    Agronomic water-balance decision support using Management Allowed Depletion (MAD), soil texture holding capacity, and agrometeorology.
+  </p>
+</div>
+
+<!-- Demonstration Scenarios -->
+{% if scenarios %}
+  <div class="card" style="margin-bottom: 1.5rem; background: #f1f8e9; border: 1px solid #dcedc8;">
+    <div style="font-weight: 600; font-size: 0.9rem; color: var(--primary-dark); margin-bottom: 0.5rem;">
+      Load Pre-Configured Demonstration Scenario:
+    </div>
+    <div class="scenario-pills">
+      {% for sc in scenarios %}
+        <button type="button" class="scenario-btn" onclick='loadScenario({{ sc | tojson }})'>
+          {{ sc.title }}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+<div class="grid-2">
+  <!-- Input Form -->
+  <div class="card">
+    <div class="card-title">1. Crop &amp; Soil Water Parameters</div>
+    <form action="{{ url_for('irrigation.assess_irrigation') }}" method="POST" id="irrigationForm">
+
+      <!-- Crop Select -->
+      <div class="form-group">
+        <label for="irrCrop" class="form-label">Crop Type <span style="color: var(--danger);">*</span></label>
+        <select name="crop" id="irrCrop" class="form-control" required>
+          <option value="" disabled {% if not selected_crop and not (form_data and form_data.crop) %}selected{% endif %}>-- Select from 24 Supported Varieties --</option>
+          {% for c in supported_crops %}
+            <option value="{{ c }}" {% if (form_data and form_data.crop == c) or (selected_crop and selected_crop.lower() == c.lower()) %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-hint">Governs root depth and physiological water stress vulnerability.</div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Growth Stage -->
+        <div class="form-group">
+          <label for="irrStage" class="form-label">Growth Stage (Optional)</label>
+          <select name="growth_stage" id="irrStage" class="form-control">
+            <option value="">-- Unspecified (Default) --</option>
+            {% for s in growth_stages %}
+              <option value="{{ s }}" {% if form_data and form_data.growth_stage == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Soil Type -->
+        <div class="form-group">
+          <label for="irrSoil" class="form-label">Soil Texture (Optional)</label>
+          <select name="soil_type" id="irrSoil" class="form-control">
+            <option value="">-- Unspecified (Default Loam) --</option>
+            {% for st in soil_types %}
+              <option value="{{ st }}" {% if form_data and form_data.soil_type == st %}selected{% endif %}>{{ st }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Soil Moisture Input -->
+      <div class="form-group">
+        <label for="irrMoisture" class="form-label">Measured Soil Moisture (%)</label>
+        <input type="number" step="0.1" min="0" max="100" name="soil_moisture" id="irrMoisture" class="form-control"
+               placeholder="e.g., 34.5 (Leave blank if unmeasured)"
+               value="{{ form_data.soil_moisture if form_data and form_data.soil_moisture is not none else '' }}">
+        <div class="form-hint">Volumetric percentage from sensor or tensiometer. Missing values are never assumed zero.</div>
+      </div>
+
+      <!-- Rainfall Inputs -->
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="irrRainfall" class="form-label">Recent Rainfall (mm)</label>
+          <input type="number" step="0.1" min="0" max="500" name="recent_rainfall" id="irrRainfall" class="form-control"
+                 placeholder="e.g., 15.0"
+                 value="{{ form_data.recent_rainfall if form_data and form_data.recent_rainfall is not none else '' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="irrRainHours" class="form-label">Rainfall Period (Hours)</label>
+          <input type="number" min="1" max="168" name="rainfall_period_hours" id="irrRainHours" class="form-control"
+                 placeholder="24"
+                 value="{{ form_data.rainfall_period_hours if form_data and form_data.rainfall_period_hours else '24' }}">
+        </div>
+      </div>
+
+      <!-- Location for Weather API -->
+      <div class="form-group">
+        <label for="irrLocation" class="form-label">Field Location / City (Optional for Weather)</label>
+        <input type="text" name="location" id="irrLocation" class="form-control"
+               placeholder="e.g., Fresno, CA or Bengaluru"
+               value="{{ form_data.location if form_data and form_data.location else '' }}">
+        <div class="form-hint">If configured, queries live temperature and humidity to calculate atmospheric evaporative demand.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+        Evaluate Irrigation Requirement &rarr;
+      </button>
+    </form>
+  </div>
+
+  <!-- Results View -->
+  <div>
+    {% if result %}
+      <div class="card" style="border-top: 4px solid {% if 'needed' in result.recommendation.lower() and 'not' not in result.recommendation.lower() %}var(--danger){% elif 'not needed' in result.recommendation.lower() %}var(--success){% else %}var(--warning){% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+          <div>
+            <div class="card-title" style="margin-bottom: 0.2rem;">
+              {{ result.recommendation }}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">
+              Confidence Level: {{ result.confidence_level }}
+            </div>
+          </div>
+          <span class="badge {% if result.action_urgency in ['High', 'Critical'] %}badge-danger{% elif result.action_urgency in ['Adequate Moisture', 'Defer Irrigation'] %}badge-success{% else %}badge-warning{% endif %}">
+            Urgency: {{ result.action_urgency }}
+          </span>
+        </div>
+
+        {% if result.effective_threshold_pct %}
+          <div style="background: #e8f5e9; padding: 0.6rem 0.85rem; border-radius: var(--radius); font-size: 0.85rem; margin: 0.75rem 0;">
+            <strong>Calculated MAD Threshold:</strong> {{ result.effective_threshold_pct }}%
+            <span style="color: var(--text-muted); font-size: 0.75rem;">(Management Allowed Depletion trigger point)</span>
+          </div>
+        {% endif %}
+
+        <!-- Agronomic Rationale -->
+        <div style="margin: 1rem 0;">
+          <strong style="font-size: 0.9rem; color: var(--primary-dark);">Agronomic Rationale:</strong>
+          <p style="font-size: 0.85rem; margin-top: 0.25rem; color: #37474f;">{{ result.rationale }}</p>
+        </div>
+
+        <!-- Recommended Next Action -->
+        <div style="background: #fff8e1; border-left: 4px solid var(--accent); padding: 0.75rem 1rem; border-radius: var(--radius); margin: 1rem 0;">
+          <strong style="font-size: 0.85rem; color: var(--accent);">Recommended Water Action:</strong>
+          <p style="font-size: 0.85rem; margin-top: 0.2rem;">{{ result.next_action }}</p>
+        </div>
+
+        <!-- Weather Status Card -->
+        {% if result.weather_info %}
+          {% set w = result.weather_info %}
+          <div style="border: 1px solid var(--surface-border); border-radius: var(--radius); padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem;">
+            <strong>Agrometeorological Telemetry:</strong>
+            {% if w.is_available %}
+              <div style="margin-top: 0.35rem; display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                <div>🌡️ Temp: <strong>{{ w.temperature_c }}°C</strong></div>
+                <div>💧 Humidity: <strong>{{ w.humidity_pct }}%</strong></div>
+                <div>🌤️ Condition: <strong>{{ w.condition }}</strong></div>
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                Source: {{ w.source }} (Location: {{ w.location }})
+              </div>
+            {% else %}
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem;">
+                Status: {{ w.source }}. {{ w.note }}
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <!-- Missing Data Notes -->
+        {% if result.missing_data_notes %}
+          <div style="margin: 0.75rem 0; font-size: 0.8rem; color: #546e7a;">
+            <strong>Data Notes &amp; Assumptions:</strong>
+            <ul style="margin-left: 1.25rem; margin-top: 0.2rem;">
+              {% for note in result.missing_data_notes %}
+                <li>{{ note }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Factors & Rules Triggered -->
+        <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--surface-border); padding-top: 0.75rem;">
+          <div><strong>Triggered Decision Rules:</strong></div>
+          <ul style="margin-left: 1.25rem; margin-top: 0.25rem;">
+            {% for rule in result.rules_triggered %}
+              <li>{{ rule }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <!-- Download Report -->
+        <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem;">
+          <a href="{{ url_for('irrigation.download_report', record_id=result.record_id) }}" class="btn btn-outline btn-sm">
+            📥 Download Irrigation Report (.txt)
+          </a>
+          <a href="{{ url_for('history.history_view') }}" class="btn btn-secondary btn-sm">
+            View in Audit History
+          </a>
+        </div>
+      </div>
+
+    {% else %}
+      <div class="card" style="text-align: center; padding: 3rem 1.5rem; color: var(--text-muted);">
+        <span style="font-size: 3rem;">💧</span>
+        <h3 style="margin-top: 0.5rem; color: #37474f;">Advisory Awaiting Input</h3>
+        <p style="font-size: 0.9rem; max-width: 380px; margin: 0.5rem auto 0 auto;">
+          Configure your crop, soil moisture reading, and recent rainfall on the left, or click one of the pre-configured demonstration scenarios above to view an instant evaluation.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function loadScenario(scenario) {
+    document.getElementById('irrCrop').value = scenario.crop || '';
+    document.getElementById('irrStage').value = scenario.growth_stage || '';
+    document.getElementById('irrSoil').value = scenario.soil_type || '';
+    document.getElementById('irrMoisture').value = (scenario.soil_moisture !== null && scenario.soil_moisture !== undefined) ? scenario.soil_moisture : '';
+    document.getElementById('irrRainfall').value = (scenario.recent_rainfall !== null && scenario.recent_rainfall !== undefined) ? scenario.recent_rainfall : '';
+    document.getElementById('irrRainHours').value = scenario.rainfall_period_hours || 24;
+    document.getElementById('irrLocation').value = 'Fresno';
+  }
+</script>
+{% endblock %}
