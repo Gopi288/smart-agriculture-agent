@@ -275,16 +275,22 @@ def get_irrigation_assessments(
 
 
 def get_system_counts(db_path: Path) -> Dict[str, int]:
-    """Retrieve counts of saved disease and irrigation records."""
+    """Retrieve counts of saved disease, irrigation, and user records."""
     with get_db_connection(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM disease_analyses;")
         disease_count = cursor.fetchone()[0]
         cursor.execute("SELECT COUNT(*) FROM irrigation_assessments;")
         irrigation_count = cursor.fetchone()[0]
+        try:
+            cursor.execute("SELECT COUNT(*) FROM users;")
+            users_count = cursor.fetchone()[0]
+        except Exception:
+            users_count = 0
         return {
             "disease_analyses_count": disease_count,
             "irrigation_assessments_count": irrigation_count,
+            "users_count": users_count,
         }
 
 
@@ -379,7 +385,14 @@ def verify_user_credentials(db_path: Path, identifier: str, password: str) -> Op
 
 
 def init_default_demo_user(db_path: Path) -> None:
-    """Seed an initial demonstration farmer account if no users exist in the database."""
+    """Seed an initial demonstration farmer account if no users exist.
+
+    Also resets the demo account password to the known demo credential if
+    the stored hash is stale (e.g. after a manual DB edit or migration).
+    """
+    _DEMO_USERNAME = "farmer_demo"
+    _DEMO_PASSWORD = "FarmerPassword123!"
+
     with get_db_connection(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM users;")
@@ -388,10 +401,24 @@ def init_default_demo_user(db_path: Path) -> None:
     if count == 0:
         create_user(
             db_path=db_path,
-            username="farmer_demo",
+            username=_DEMO_USERNAME,
             email="demo@smartagri.local",
-            password="FarmerPassword123!",
+            password=_DEMO_PASSWORD,
             full_name="Demonstration Farmer",
             role="farmer",
         )
-        print("[*] Seeded initial demonstration account (farmer_demo / FarmerPassword123!)")
+        print(f"[*] Seeded initial demonstration account ({_DEMO_USERNAME} / {_DEMO_PASSWORD})")
+    else:
+        # Ensure the demo account password matches the displayed credential.
+        # If the hash was generated from a different password (e.g. migration
+        # artifact), silently reset it so the login page "Click to Fill" works.
+        verified = verify_user_credentials(db_path, _DEMO_USERNAME, _DEMO_PASSWORD)
+        if verified is None:
+            new_hash = generate_password_hash(_DEMO_PASSWORD)
+            with get_db_connection(db_path) as conn:
+                conn.execute(
+                    "UPDATE users SET password_hash = ? WHERE username = ?",
+                    (new_hash, _DEMO_USERNAME),
+                )
+                conn.commit()
+            print(f"[*] Demo account password re-synced ({_DEMO_USERNAME} / {_DEMO_PASSWORD})")

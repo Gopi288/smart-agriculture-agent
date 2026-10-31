@@ -159,6 +159,7 @@ def analyze_disease():
     return render_template(
         "disease_detection.html",
         supported_crops=current_app.config["SUPPORTED_CROPS"],
+        all_crops=ALL_CROPS,
         sample_images=sample_images,
         result=combined_result,
     )
