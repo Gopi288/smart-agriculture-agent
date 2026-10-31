@@ -127,7 +127,7 @@ def assess_irrigation():
 
     return render_template(
         "irrigation_advisor.html",
-        supported_crops=SUPPORTED_CROPS,
+        supported_crops=ALL_CROPS,
         growth_stages=SUPPORTED_GROWTH_STAGES,
         soil_types=SUPPORTED_SOIL_TYPES,
         scenarios=scenarios,

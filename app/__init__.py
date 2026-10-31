@@ -43,9 +43,14 @@ def create_app(config_object=None) -> Flask:
     init_db(db_path)
     init_default_demo_user(db_path)
 
-    # Security cookie settings
-    app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
-    app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
+    # Security cookie settings — must be assigned directly, not setdefault,
+    # because Flask 3.x may already have defaults that setdefault() won't override.
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    # SESSION_COOKIE_SECURE should be True in production (HTTPS).
+    # On Render all traffic is HTTPS, so set based on env.
+    import os as _os
+    app.config["SESSION_COOKIE_SECURE"] = _os.getenv("FLASK_ENV", "development").lower() == "production"
 
     # Hook user loading before each request
     @app.before_request

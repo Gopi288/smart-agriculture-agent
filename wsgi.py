@@ -1,20 +1,22 @@
-"""WSGI entry point for Gunicorn.
+"""WSGI entry point for Gunicorn and other WSGI servers.
 
-Gunicorn imports this module and looks for the 'application' or 'app'
-callable. Using a dedicated wsgi.py keeps app.py clean (dev server only)
-and makes the Gunicorn start command straightforward:
+Gunicorn imports this module and looks for the 'app' or 'application' callable.
+Both are exposed for maximum compatibility.
 
-    gunicorn wsgi:app -c gunicorn.conf.py
+Start commands:
+  gunicorn wsgi:app -c gunicorn.conf.py          (uses gunicorn.conf.py settings)
+  gunicorn wsgi:application --bind 0.0.0.0:$PORT  (inline flags)
 """
 
 import os
 from app import create_app
 
 # Create the Flask application instance using the factory.
-# The FLASK_ENV environment variable selects the configuration class:
+# FLASK_ENV selects the configuration:
 #   production  → ProductionConfig (debug=False)
 #   development → DevelopmentConfig (debug=True)
 app = create_app()
 
-# Expose as 'application' for maximum WSGI compatibility (PEP 3333).
+# Expose as 'application' for PEP 3333 compatibility
 application = app
+

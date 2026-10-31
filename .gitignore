@@ -14,11 +14,11 @@ ENV/
 # Sensitive environment variables
 .env
 
-# SQLite databases
+# SQLite databases (all DB files excluded — schema init happens at runtime)
 *.db
 *.sqlite3
 
-# Uploads directory contents except placeholder
+# Uploads directory contents except the placeholder
 static/uploads/*
 !static/uploads/.gitkeep
 
@@ -30,3 +30,9 @@ htmlcov/
 # Operating system artifacts
 .DS_Store
 Thumbs.db
+
+# Editor artifacts
+*.swp
+*.swo
+.idea/
+.vscode/

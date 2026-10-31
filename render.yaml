@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app -c gunicorn.conf.py
+    startCommand: gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
     healthCheckPath: /healthz
     envVars:
       - key: FLASK_ENV
@@ -12,6 +12,10 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
-        value: "3.12.0"
+        value: "3.12.7"
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.70"
+      - key: UNCERTAINTY_MARGIN
+        value: "0.15"
       - key: OPENWEATHER_API_KEY
         sync: false    # Set in Render dashboard — leave blank for offline mode
