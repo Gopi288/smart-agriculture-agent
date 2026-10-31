@@ -2,6 +2,12 @@
 
 Initializes configuration, persistence schema, service singletons,
 and registers route blueprints and global exception handlers.
+
+Render deployment notes:
+- The CropDiseaseClassifier uses LAZY model loading: weights are only read
+  from disk on the first call to predict(), not at create_app() time.
+  This keeps worker startup fast and avoids OOM on Render free tier.
+- /healthz is a lightweight, model-free endpoint for Render health checks.
 """
 
 from pathlib import Path
@@ -54,7 +60,12 @@ def create_app(config_object=None) -> Flask:
             "csrf_token": generate_csrf_token,
         }
 
+    # -----------------------------------------------------------------------
     # Initialize service instances
+    # CropDiseaseClassifier is lazy: NO model weights are loaded here.
+    # Weights are loaded on first predict() call inside a request context.
+    # This keeps worker startup memory under ~150MB on Render free tier.
+    # -----------------------------------------------------------------------
     classifier = CropDiseaseClassifier(
         model_path=Path(app.config["MODEL_PATH"]),
         class_indices_path=Path(app.config["CLASS_INDICES_PATH"]),

@@ -135,3 +135,14 @@ def health_check():
         "weather_api_configured": weather_svc.is_configured if weather_svc else False,
         "database": str(current_app.config["DATABASE_PATH"].name),
     })
+
+
+@main_bp.route("/healthz")
+def healthz():
+    """Lightweight liveness probe for Render and load-balancer health checks.
+
+    This endpoint intentionally does NOT load or query the AI model.
+    It returns 200 immediately so Render can confirm the worker is alive
+    without triggering the expensive lazy model-load on every health poll.
+    """
+    return jsonify({"status": "ok"}), 200

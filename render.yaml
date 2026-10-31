@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: smart-agriculture-agent
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app -c gunicorn.conf.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: OPENWEATHER_API_KEY
+        sync: false    # Set in Render dashboard — leave blank for offline mode

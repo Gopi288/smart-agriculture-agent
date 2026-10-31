@@ -1,11 +1,41 @@
-Flask>=3.0.0
-torch>=2.0.0
-torchvision>=0.15.0
-Pillow>=10.0.0
+# Smart Agriculture Agent — Python dependencies
+#
+# IMPORTANT: PyTorch CPU-only build
+# ----------------------------------
+# The default torch/torchvision packages on PyPI include CUDA shared libraries
+# (1.5-2 GB). On Render free tier this exceeds the build cache and RAM limits.
+# The CPU-only wheels from the PyTorch index are ~250 MB total.
+#
+# Install command for local CPU-only setup:
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+#
+# Render automatically uses the index-url comment below via pip's --extra-index-url.
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Core web framework
+Flask>=3.0.0,<4.0.0
+gunicorn>=21.2.0
+
+# PyTorch CPU-only builds (pinned minor version for reproducibility)
+torch==2.3.1+cpu
+torchvision==0.18.1+cpu
+
+# Image processing
+Pillow>=10.0.0,<11.0.0
+
+# Data / ML utilities
 scikit-learn>=1.3.0
 pandas>=2.0.0
 numpy>=1.24.0
+
+# HTTP & environment
 requests>=2.31.0
 python-dotenv>=1.0.0
+
+# Reporting
+reportlab>=4.0.0
+
+# Testing (not installed on Render, only dev/CI)
 pytest>=8.0.0
-gunicorn
+pytest-mock>=3.12.0

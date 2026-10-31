@@ -14,14 +14,20 @@ def test_image_preprocessing(valid_test_image):
 
 
 def test_classifier_initialization():
-    """Verify classifier loads trained weights and class index dictionary."""
+    """Verify class indices load at init and model loads lazily on ensure_loaded()."""
     classifier = CropDiseaseClassifier(
         model_path=Config.MODEL_PATH,
         class_indices_path=Config.CLASS_INDICES_PATH,
         confidence_threshold=0.70,
     )
-    assert classifier.is_model_ready is True
+    # Model weights are lazy-loaded — not yet loaded at __init__ time.
+    assert classifier.is_model_ready is False
+    # Class indices (tiny JSON) are loaded eagerly at __init__ time.
     assert len(classifier.idx_to_class) == 8
+
+    # After explicit ensure_loaded(), the model should be ready.
+    classifier.ensure_loaded()
+    assert classifier.is_model_ready is True
 
 
 def test_classifier_inference_on_sample():

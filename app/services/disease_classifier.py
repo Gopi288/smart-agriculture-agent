@@ -3,12 +3,24 @@
 Performs neural network inference using fine-tuned MobileNetV2 with
 softmax probability calibration, multi-class ranking, latency benchmarking,
 and explicit uncertainty / ambiguity gating.
+
+Memory optimizations for Render free-tier deployment:
+- Lazy model loading: the model weights are only read from disk when the
+  first inference request arrives. Workers that only serve auth / irrigation
+  routes never load PyTorch weights at all.
+- Thread-safe initialization via threading.Lock to avoid duplicate loading
+  when concurrent requests first hit an uninitialized worker.
+- torch.inference_mode() instead of torch.no_grad() — skips version counter
+  tracking, reducing tensor overhead during forward passes.
+- Explicit CPU device forcing to avoid any accidental CUDA allocation.
 """
 
 import json
+import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 import torch
 import torch.nn.functional as F
 
@@ -18,7 +30,12 @@ from ml.train_model import build_model
 
 
 class CropDiseaseClassifier:
-    """Inference engine managing MobileNetV2 model loading and prediction."""
+    """Inference engine managing MobileNetV2 model loading and prediction.
+
+    The model weights are loaded lazily on first call to predict() or
+    explicit call to ensure_loaded(), not at __init__ time. This prevents
+    every Gunicorn worker from consuming model memory during startup.
+    """
 
     def __init__(
         self,
@@ -33,15 +50,25 @@ class CropDiseaseClassifier:
         self.confidence_threshold = confidence_threshold
         self.uncertainty_margin = uncertainty_margin
 
+        # Always force CPU on Render — no CUDA available on free tier.
+        # Forcing CPU avoids torch trying to probe for CUDA drivers and
+        # allocating CUDA context memory unnecessarily.
         if device:
             self.device = torch.device(device)
         else:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.device = torch.device("cpu")
 
         self.idx_to_class: Dict[int, str] = {}
         self.model: Optional[torch.nn.Module] = None
+        self._loaded: bool = False
+        self._load_lock = threading.Lock()
+
+        # Class indices can be loaded eagerly — they are tiny JSON files.
         self._load_class_indices()
-        self._load_model()
+
+    # ------------------------------------------------------------------
+    # Class Index Loading (lightweight, always eager)
+    # ------------------------------------------------------------------
 
     def _load_class_indices(self) -> None:
         """Load class index to human-readable label mapping."""
@@ -55,18 +82,33 @@ class CropDiseaseClassifier:
         else:
             self.idx_to_class = {i: c for i, c in enumerate(SUPPORTED_CLASSES)}
 
+    # ------------------------------------------------------------------
+    # Lazy Model Loading (heavy, deferred until first inference)
+    # ------------------------------------------------------------------
+
     def _load_model(self) -> None:
-        """Instantiate MobileNetV2 architecture and load trained weights."""
+        """Instantiate MobileNetV2 architecture and load trained weights.
+
+        Must only be called while holding self._load_lock to prevent
+        duplicate loading from concurrent first-requests.
+        """
         num_classes = len(self.idx_to_class) if self.idx_to_class else len(SUPPORTED_CLASSES)
-        self.model = build_model(num_classes=num_classes, freeze_backbone=False)
+        model = build_model(num_classes=num_classes, freeze_backbone=False)
 
         if self.model_path.exists():
             try:
-                state_dict = torch.load(str(self.model_path), map_location=self.device)
-                self.model.load_state_dict(state_dict)
-                self.model = self.model.to(self.device)
-                self.model.eval()
-                print(f"[*] CropDiseaseClassifier loaded weights from {self.model_path}")
+                # map_location=self.device ensures weights land directly on CPU
+                # without any intermediate CUDA allocation.
+                state_dict = torch.load(
+                    str(self.model_path),
+                    map_location=self.device,
+                    weights_only=True,  # Security: reject pickled callables
+                )
+                model.load_state_dict(state_dict)
+                model = model.to(self.device)
+                model.eval()
+                self.model = model
+                print(f"[*] CropDiseaseClassifier lazy-loaded weights from {self.model_path}")
             except Exception as exc:
                 print(f"[Warning] Failed loading weights from {self.model_path}: {exc}")
                 self.model = None
@@ -74,13 +116,40 @@ class CropDiseaseClassifier:
             print(f"[Warning] Model file not found at {self.model_path}. Train model to enable inference.")
             self.model = None
 
+        self._loaded = True
+
+    def ensure_loaded(self) -> None:
+        """Thread-safe lazy initialization of model weights.
+
+        Calling this multiple times is safe. The model is loaded at most once.
+        """
+        if self._loaded:
+            return
+        with self._load_lock:
+            # Double-checked locking: another thread may have loaded
+            # while we were waiting for the lock.
+            if not self._loaded:
+                self._load_model()
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
     @property
     def is_model_ready(self) -> bool:
-        """Check whether the model weights are loaded and ready for inference."""
-        return self.model is not None
+        """Check whether model weights have been loaded and are ready for inference.
+
+        Note: returns False before the first inference call because the model
+        is lazy-loaded. Use ensure_loaded() to force eager loading if needed
+        (e.g. after a health check warm-up request).
+        """
+        return self._loaded and self.model is not None
 
     def predict(self, image_path: Path) -> Dict[str, Any]:
         """Execute deep learning classification on an uploaded leaf photograph.
+
+        Lazily loads the model on first call. Subsequent calls reuse the same
+        model instance without any additional I/O or memory allocation.
 
         Args:
             image_path: Path to the validated image on disk.
@@ -88,6 +157,9 @@ class CropDiseaseClassifier:
         Returns:
             Dictionary with predicted class, confidence, latency, and uncertainty metrics.
         """
+        # Trigger lazy load if not yet done
+        self.ensure_loaded()
+
         if not self.is_model_ready:
             return {
                 "success": False,
@@ -106,7 +178,10 @@ class CropDiseaseClassifier:
             tensor_batch = tensor_batch.to(self.device)
 
             t_start = time.perf_counter()
-            with torch.no_grad():
+            # torch.inference_mode() is more memory-efficient than torch.no_grad():
+            # it disables Autograd tracking AND version counters entirely,
+            # reducing per-tensor overhead during the forward pass.
+            with torch.inference_mode():
                 logits = self.model(tensor_batch)
                 probabilities = F.softmax(logits, dim=1).squeeze(0)
             t_end = time.perf_counter()
